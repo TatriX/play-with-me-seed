@@ -1,0 +1,60 @@
+:root {
+    --border    : 1px solid #ccc;
+    --cell-size : 25px;
+    --token-font: sans-serif;
+}
+.grid-container {
+    margin : 2em;
+}
+.grid {
+    display     : flex;
+
+    border-left : var(--border);
+}
+.cell {
+    display         : flex;
+    flex            : none;
+    align-items     : center;
+    justify-content : center;
+    cursor          : pointer;
+    width           : var(--cell-size);
+    height          : var(--cell-size);
+    border-right    : var(--border);
+    border-top      : var(--border);
+    font-size       : 20px;
+}
+.cell:last-child {
+    border-bottom   : var(--border);
+}
+.grid-cell:hover {
+    background: #f2f2f2;
+}
+.grid-cell_normal {
+    font-weight  : normal;
+    color        : black;
+}
+.grid-cell_clicked {
+    font-weight : bold;
+    color       : red;
+}
+.page-content {
+    overflow                   : auto;
+    -webkit-overflow-scrolling : touch;
+}
+.my-mdl-dialog {
+    width : 400px;
+}
+.player-list-item {
+    position : relative;
+    left     : 30px;
+    width    : 250px;
+}
+.token-list {
+    display : flex;
+    flex-direction: row;
+    margin-left : 3em;
+    margin-right : 3em;
+}
+.token {
+    font-family: var(--token-font);
+}
