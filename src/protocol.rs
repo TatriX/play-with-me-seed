@@ -43,7 +43,7 @@ pub struct History {
 pub enum ClientMessage {
     Connect {
         #[serde(rename = "Player")]
-        player_name: String,
+        player: String,
     },
     PostMove {
         #[serde(rename = "Cell")]

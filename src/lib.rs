@@ -11,6 +11,7 @@ mod protocol;
 mod websocket;
 
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
+const ENTER_KEY: u32 = 13;
 
 #[wasm_bindgen]
 pub fn render() {
@@ -24,24 +25,44 @@ pub fn render() {
 
 #[derive(Clone)]
 struct Model {
-    ws: WebSocket,
+    /// Well, it's a websocket!
+    ws: Option<WebSocket>,
+
+    /// Size of the field
     size: u32,
-    connected: bool,
+
+    /// Current game stage
+    stage: Stage,
+
+    /// Current session id
     session: String,
+
+    /// Current player name
+    player: String,
+
+    /// Who is connected
     players: Vec<String>,
+
+    /// State of the game field
     history: History,
+}
+
+#[derive(Clone)]
+enum Stage {
+    Lobby,
+    Loading,
+    Gameplay,
 }
 
 impl Model {
     fn new(size: u32) -> Self {
-        let ws = WebSocket::new(WS_URL).unwrap();
-        websocket::register_handlers(&ws);
         Self {
-            ws,
             size,
-            session: "debug".into(),
-            connected: false,
+            ws: None,
+            session: "global".into(),
+            stage: Stage::Lobby,
             history: History::default(),
+            player: "Anonymous".into(),
             players: vec![],
         }
     }
@@ -55,6 +76,8 @@ impl Model {
 
     fn send(&self, message: impl Serialize) {
         self.ws
+            .as_ref()
+            .expect("sending to a None socket")
             .send_with_str(&self.frame(message))
             .expect("cannot send message");
     }
@@ -64,14 +87,34 @@ impl Model {
 // `Deserialize` is required by `trigger_update_handler`
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Msg {
-    Connect { player_name: String },
+    NameChange(String),
+    SessionChange(String),
+    Connect,
     Connected,
     ServerMessage(ServerMessage),
+    Join { player: String },
     Move { x: u32, y: u32 },
+    CleanHistory,
+    Nope,
 }
 
 fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
     match msg {
+        Msg::NameChange(player) => model.player = player,
+        Msg::SessionChange(session) => model.session = session,
+        Msg::Connect => {
+            let ws = WebSocket::new(WS_URL).expect("websocket failure");
+            websocket::register_handlers(&ws);
+            model.ws = Some(ws);
+            model.stage = Stage::Loading;
+        }
+        Msg::Connected => {
+            log!("Connected!");
+            model.stage = Stage::Gameplay;
+            orders.send_msg(Msg::Join {
+                player: model.player.clone(),
+            });
+        }
         Msg::Move { x, y } => {
             model.send(ClientMessage::PostMove {
                 cell: Cell {
@@ -80,18 +123,12 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
                 },
             });
         }
-        Msg::Connect { player_name } => {
-            model.send(ClientMessage::Connect { player_name });
-            // this method also fetches history, the same way as original client does
-            model.send(ClientMessage::GetHistory)
+        Msg::Join { player } => {
+            model.send(ClientMessage::Connect { player });
+            model.send(ClientMessage::GetHistory);
         }
-        Msg::Connected => {
-            log!("Connected!");
-
-            model.connected = true;
-            orders.send_msg(Msg::Connect {
-                player_name: "Vasya".into(),
-            });
+        Msg::CleanHistory => {
+            model.send(ClientMessage::CleanHistory);
         }
         Msg::ServerMessage(msg) => match msg {
             ServerMessage::Connected { player } => {
@@ -121,6 +158,7 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
                 model.history = History::default();
             }
         },
+        Msg::Nope => {}
     }
 }
 
@@ -128,12 +166,55 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
 fn view(model: &Model) -> Vec<El<Msg>> {
     vec![
         h6!["PlayWithMe Rust/Seed edition!"],
-        if model.connected {
-            div![draw_grid(model.size, &model.history)]
-        } else {
-            div!["Connecting..."]
+        match model.stage {
+            Stage::Lobby => lobby(model),
+            Stage::Loading => div!["Loading..."],
+            Stage::Gameplay => gameplay(model),
         },
     ]
+}
+
+fn lobby(model: &Model) -> El<Msg> {
+    div![
+        label![
+            "Name",
+            input![
+                attrs! {At::Value => model.player, At::AutoFocus => true},
+                input_ev(Ev::Input, Msg::NameChange),
+                keyboard_ev(Ev::KeyDown, submit),
+            ]
+        ],
+        br![],
+        label![
+            "Session",
+            input![
+                attrs! {At::Value => model.session},
+                input_ev(Ev::Input, Msg::SessionChange),
+                keyboard_ev(Ev::KeyDown, submit),
+            ]
+        ],
+        br![],
+        button!["Create/Connect", simple_ev(Ev::Click, Msg::Connect)],
+    ]
+}
+
+fn gameplay(model: &Model) -> El<Msg> {
+    div![
+        div![
+            button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
+            label!["Session", input![attrs! {At::Value => model.session }]],
+        ],
+        hr![],
+        draw_grid(model.size, &model.history),
+    ]
+}
+
+fn submit(ev: web_sys::KeyboardEvent) -> Msg {
+    if ev.key_code() == ENTER_KEY {
+        Msg::Connect
+    } else {
+        Msg::Nope
+    }
 }
 
 fn draw_grid(size: u32, history: &History) -> El<Msg> {
