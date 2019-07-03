@@ -8,6 +8,10 @@
     color: #222;
 }
 
+hr {
+    border: 1px inset #e0e0dd;
+}
+
 button {
     padding: 3px 5px;
 }
@@ -79,4 +83,26 @@ ul {
 
 #players .is-player {
     font-weight: bold;
+}
+
+#lobby {
+    border: 1px solid #c4c4c4;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    margin: auto;
+    padding: 10px;
+}
+
+#lobby label {
+    color: #555;
+}
+
+#lobby input {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 2px;;
+    box-sizing: border-box;
 }

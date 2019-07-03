@@ -18,6 +18,7 @@ pub fn view(model: &Model) -> Vec<El<Msg>> {
 
 fn lobby(model: &Model) -> El<Msg> {
     div![
+        id!("lobby"),
         label![
             "Name",
             input![
