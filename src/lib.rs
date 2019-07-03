@@ -1,9 +1,4 @@
 //! PlayWithMe rust client
-//!
-//! Plan:
-//! - Draw grid
-//! - Connect to a hardcoded session
-//!
 
 #[macro_use]
 extern crate seed;
@@ -12,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{MessageEvent, WebSocket};
 
-const WS_URL: &str = "ws://34.68.64.169:8080";
+const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 
 #[wasm_bindgen]
 pub fn render() {
@@ -30,6 +25,7 @@ struct Model {
     size: u32,
     connected: bool,
     session: String,
+    players: Vec<String>,
     history: History,
 }
 
@@ -43,6 +39,7 @@ impl Model {
             session: "debug".into(),
             connected: false,
             history: History::default(),
+            players: vec![],
         }
     }
 
@@ -76,12 +73,29 @@ enum Msg {
 enum ServerMessage {
     Connected {
         #[serde(rename = "Player")]
-        player_name: String,
+        player: String,
+    },
+    Disconnected {
+        #[serde(rename = "Player")]
+        player: String,
+    },
+    Move {
+        #[serde(rename = "Cell")]
+        cell: Cell,
+    },
+    Win {
+        #[serde(rename = "Player")]
+        player: String,
+    },
+    SetSession {
+        #[serde(rename = "SessionId")]
+        session: String,
     },
     SetHistory {
         #[serde(rename = "History")]
         history: History,
     },
+    Clean,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -142,13 +156,32 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
             });
         }
         Msg::ServerMessage(msg) => match msg {
-            ServerMessage::Connected { player_name } => {
-                log!(player_name, "connected");
-                model.connected = true;
-            }
+            ServerMessage::Connected { player } => {
+                log!(player, "connected");
+                model.players.push(player);
+            },
+            ServerMessage::Disconnected{ player} => {
+                log!(player, "disconnected");
+                model.players.retain(|name| name != &player);
+            },
+            ServerMessage::Move{cell} => {
+                log!(&cell);
+                model.history.moves.push(cell);
+                // TODO: focus
+            },
+            ServerMessage::Win{player} =>{
+                log!(player, "won!");
+            },
+            ServerMessage::SetSession{session} =>{
+                model.session = session;
+            },
             ServerMessage::SetHistory { history } => {
                 model.history = history;
-            }
+            },
+            ServerMessage::Clean => {
+                log!("New game started");
+                model.history = History::default();
+            },
         },
     }
 }
