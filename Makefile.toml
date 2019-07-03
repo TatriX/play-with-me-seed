@@ -83,3 +83,11 @@ workspace = false
 install_crate = { crate_name = "wasm-pack", binary = "wasm-pack", test_arg = "-V" }
 command = "wasm-pack"
 args = ["test", "--firefox", "--headless", "--", "--lib", "${@}"]
+
+[tasks.deploy]
+script = [
+ "scp index.html $ADDR",
+ "scp styles.css $ADDR",
+ "scp -r pkg $ADDR",
+]
+args = ["deploy"]
