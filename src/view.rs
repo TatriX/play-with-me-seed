@@ -1,5 +1,5 @@
+use crate::{History, Model, Msg, Stage, TOKENS};
 use seed::prelude::*;
-use crate::{Stage, Msg, History, Model, TOKENS};
 
 const ENTER_KEY: u32 = 13;
 
@@ -7,6 +7,7 @@ const ENTER_KEY: u32 = 13;
 pub fn view(model: &Model) -> Vec<El<Msg>> {
     vec![
         h1!["PlayWithMe Rust/Seed edition!"],
+        hr![],
         match model.stage {
             Stage::Lobby => lobby(model),
             Stage::Loading => div!["Loading..."],
@@ -42,28 +43,40 @@ fn lobby(model: &Model) -> El<Msg> {
 fn gameplay(model: &Model) -> El<Msg> {
     div![
         div![
-            button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
-            label!["Session", input![attrs! {At::Value => model.session }]],
+            id!("gameplay-header"),
             div![
-                label!["Token"],
-                TOKENS
-                    .iter()
-                    .map(|token| {
-                        button![
-                            class![if token == &model.token {
-                                "selected"
-                            } else {
-                                ""
-                            }],
-                            token,
-                            simple_ev(Ev::Click, Msg::TokenChange(token.to_string()))
-                        ]
-                    })
-                    .collect::<Vec<_>>()
+                id!("controls"),
+                div![
+                    id!["tokens"],
+                    label!["Token"],
+                    TOKENS
+                        .iter()
+                        .map(|token| {
+                            button![
+                                class![if token == &model.token {
+                                    "selected"
+                                } else {
+                                    ""
+                                }],
+                                token,
+                                simple_ev(Ev::Click, Msg::TokenChange(token.to_string()))
+                            ]
+                        })
+                        .collect::<Vec<_>>()
+                ],
+                button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
+            ],
+            label![
+                "Session",
+                input![attrs! {At::Value => model.session, At::ReadOnly => true }]
             ],
         ],
         hr![],
-        draw_grid(model.size, &model.history),
+        div![
+            id!("gameplay-area"),
+            player_list(&model.history.players, &model.player),
+            draw_grid(model.size, &model.history),
+        ]
     ]
 }
 
@@ -73,6 +86,17 @@ fn submit(ev: web_sys::KeyboardEvent) -> Msg {
     } else {
         Msg::Nope
     }
+}
+
+fn player_list(players: &[String], player: &str) -> El<Msg> {
+    ul![
+        id!("players"),
+        li![class!["list-header"], "Players:"],
+        players
+            .iter()
+            .map(|name| li![class![if name == player { "is-player" } else { "" }], name])
+            .collect::<Vec<_>>(),
+    ]
 }
 
 fn draw_grid(size: u32, history: &History) -> El<Msg> {

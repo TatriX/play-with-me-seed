@@ -1,64 +1,82 @@
+@import url("https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap");
+
 :root {
     --border    : 1px solid #ccc;
     --cell-size : 25px;
-    --token-font: sans-serif;
+    font-family: "Roboto", sans-serif;
+    background: #fcfcf7;
+    color: #222;
 }
-.grid-container {
-    margin : 2em;
+
+button {
+    padding: 3px 5px;
 }
+
+input[readonly] {
+    opacity: 0.5;
+}
+
+label input, label + button {
+    margin-left: 5px;
+}
+
+ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.list-header {
+    list-style-type: none;
+    font-weight: bold;
+}
+
 .grid {
-    display     : flex;
-
-    border-left : var(--border);
+    font-size : 20px;
+    display: flex;
+    justify-content: center;
+    flex-grow: 1;
 }
+
 .cell {
-    display         : flex;
-    flex            : none;
-    align-items     : center;
-    justify-content : center;
-    cursor          : pointer;
-    width           : var(--cell-size);
-    height          : var(--cell-size);
-    border-right    : var(--border);
-    border-top      : var(--border);
-    font-size       : 20px;
-}
-.cell:last-child {
-    border-bottom   : var(--border);
-}
-.grid-cell:hover {
-    background: #f2f2f2;
-}
-.grid-cell_normal {
-    font-weight  : normal;
-    color        : black;
-}
-.grid-cell_clicked {
-    font-weight : bold;
-    color       : red;
-}
-.page-content {
-    overflow                   : auto;
-    -webkit-overflow-scrolling : touch;
-}
-.my-mdl-dialog {
-    width : 400px;
-}
-.player-list-item {
-    position : relative;
-    left     : 30px;
-    width    : 250px;
-}
-.token-list {
-    display : flex;
-    flex-direction: row;
-    margin-left : 3em;
-    margin-right : 3em;
-}
-.token {
-    font-family: var(--token-font);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: var(--border);
+    margin: -1px 0 0 -1px;
 }
 
-.selected {
+.cell:hover {
+    background: #333;
+    color: #ddd;
+}
+
+#gameplay-header, #controls {
+    display: flex;
+    justify-content: space-between;
+}
+
+#controls > div {
+    margin-right: 20px;
+}
+
+#tokens button {
+    border: 1px solid #c2bebe;
+    border-radius: 2px;
+    margin-right: 2px;
+}
+
+#tokens button.selected {
+    border-color: #1779ba;
+    background: #ebe8e8;
+}
+
+#gameplay-area {
+    display: flex;
+}
+
+#players .is-player {
     font-weight: bold;
 }

@@ -8,12 +8,12 @@ use serde::{Deserialize, Serialize};
 use web_sys::WebSocket;
 
 mod protocol;
-mod websocket;
 mod view;
+mod websocket;
 
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 
-pub const TOKENS: [&str; 4] = ["☀", "☉", "☘", "☣"];
+pub const TOKENS: [&str; 10] = ["✗", "❍", "☀", "☉", "☘", "☣", "█", "▓", "▒", "░"];
 
 #[wasm_bindgen]
 pub fn render() {
@@ -24,7 +24,8 @@ pub fn render() {
         .finish()
         .run();
 
-    let autoconnect = true;
+    let search = seed::window().location().search().expect("cannot get location");
+    let autoconnect = search == "?autoconnect";
     if autoconnect {
         seed::update(Msg::Connect);
     }
@@ -129,12 +130,12 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
             model.send(ClientMessage::GetHistory);
         }
         Msg::Move { x, y } => {
-            model.send(ClientMessage::PostMove {
-                cell: Cell {
-                    coord: Coord { row: y, col: x },
-                    value: model.token.clone(),
-                },
-            });
+            let cell = Cell {
+                coord: Coord { row: y, col: x },
+                value: model.token.clone(),
+            };
+            model.history.moves.push(cell.clone());
+            model.send(ClientMessage::PostMove {cell});
         }
         Msg::CleanHistory => {
             model.send(ClientMessage::CleanHistory);

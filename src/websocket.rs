@@ -35,7 +35,7 @@ fn register_handler_on_message(ws: &web_sys::WebSocket) {
         log!("Client received a message");
         let txt = ev.data().as_string().unwrap();
         let json: ServerMessage = serde_json::from_str(&txt).unwrap();
-        log!(&txt);
+        dbg!(&txt);
         seed::update(Msg::ServerMessage(json));
     }) as Box<FnMut(MessageEvent)>);
 
