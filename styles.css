@@ -58,3 +58,7 @@
 .token {
     font-family: var(--token-font);
 }
+
+.selected {
+    font-weight: bold;
+}

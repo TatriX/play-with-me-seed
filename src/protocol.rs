@@ -24,6 +24,7 @@ pub enum ServerMessage {
         #[serde(rename = "SessionId")]
         session: String,
     },
+    /// Send once on first connect
     SetHistory {
         #[serde(rename = "History")]
         history: History,

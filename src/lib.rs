@@ -13,6 +13,8 @@ mod websocket;
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 const ENTER_KEY: u32 = 13;
 
+const TOKENS: [&str; 2] = ["x", "o"];
+
 #[wasm_bindgen]
 pub fn render() {
     seed::App::build(Model::new(30), update, view)
@@ -36,6 +38,9 @@ struct Model {
 
     /// Current session id
     session: String,
+
+    /// Current token ("x" or "o" for now)
+    token: String,
 
     /// Current player name
     player: String,
@@ -63,6 +68,7 @@ impl Model {
             stage: Stage::Lobby,
             history: History::default(),
             player: "Anonymous".into(),
+            token: TOKENS[0].into(),
             players: vec![],
         }
     }
@@ -89,19 +95,20 @@ impl Model {
 pub enum Msg {
     NameChange(String),
     SessionChange(String),
+    TokenChange(String),
     Connect,
     Connected,
     ServerMessage(ServerMessage),
-    Join { player: String },
     Move { x: u32, y: u32 },
     CleanHistory,
     Nope,
 }
 
-fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
+fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
     match msg {
         Msg::NameChange(player) => model.player = player,
         Msg::SessionChange(session) => model.session = session,
+        Msg::TokenChange(token) => model.token = token,
         Msg::Connect => {
             let ws = WebSocket::new(WS_URL).expect("websocket failure");
             websocket::register_handlers(&ws);
@@ -111,21 +118,18 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
         Msg::Connected => {
             log!("Connected!");
             model.stage = Stage::Gameplay;
-            orders.send_msg(Msg::Join {
+            model.send(ClientMessage::Connect {
                 player: model.player.clone(),
             });
+            model.send(ClientMessage::GetHistory);
         }
         Msg::Move { x, y } => {
             model.send(ClientMessage::PostMove {
                 cell: Cell {
                     coord: Coord { row: y, col: x },
-                    value: "X".into(),
+                    value: model.token.clone(),
                 },
             });
-        }
-        Msg::Join { player } => {
-            model.send(ClientMessage::Connect { player });
-            model.send(ClientMessage::GetHistory);
         }
         Msg::CleanHistory => {
             model.send(ClientMessage::CleanHistory);
@@ -151,6 +155,7 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
                 model.session = session;
             }
             ServerMessage::SetHistory { history } => {
+                model.token = select_token(&history);
                 model.history = history;
             }
             ServerMessage::Clean => {
@@ -160,6 +165,10 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
         },
         Msg::Nope => {}
     }
+}
+
+fn select_token(history: &History) -> String {
+    TOKENS[history.players.len() % TOKENS.len()].to_string()
 }
 
 /// Main view
@@ -203,6 +212,23 @@ fn gameplay(model: &Model) -> El<Msg> {
         div![
             button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
             label!["Session", input![attrs! {At::Value => model.session }]],
+            div![
+                label!["Token"],
+                TOKENS
+                    .iter()
+                    .map(|token| {
+                        button![
+                            class![if token == &model.token {
+                                "selected"
+                            } else {
+                                ""
+                            }],
+                            token,
+                            simple_ev(Ev::Click, Msg::TokenChange(token.to_string()))
+                        ]
+                    })
+                    .collect::<Vec<_>>()
+            ],
         ],
         hr![],
         draw_grid(model.size, &model.history),
