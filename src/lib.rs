@@ -2,10 +2,13 @@
 
 #[macro_use]
 extern crate seed;
+use protocol::*;
 use seed::prelude::*;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::JsCast;
-use web_sys::{MessageEvent, WebSocket};
+use web_sys::WebSocket;
+
+mod protocol;
+mod websocket;
 
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 
@@ -32,7 +35,7 @@ struct Model {
 impl Model {
     fn new(size: u32) -> Self {
         let ws = WebSocket::new(WS_URL).unwrap();
-        register_handlers(&ws);
+        websocket::register_handlers(&ws);
         Self {
             ws,
             size,
@@ -60,76 +63,11 @@ impl Model {
 // `Serialize` is required by `seed::update(..)`
 // `Deserialize` is required by `trigger_update_handler`
 #[derive(Clone, Serialize, Deserialize)]
-enum Msg {
+pub enum Msg {
     Connect { player_name: String },
     Connected,
     ServerMessage(ServerMessage),
     Move { x: u32, y: u32 },
-}
-
-/// Message from the server to the client.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "message", content = "data")]
-enum ServerMessage {
-    Connected {
-        #[serde(rename = "Player")]
-        player: String,
-    },
-    Disconnected {
-        #[serde(rename = "Player")]
-        player: String,
-    },
-    Move {
-        #[serde(rename = "Cell")]
-        cell: Cell,
-    },
-    Win {
-        #[serde(rename = "Player")]
-        player: String,
-    },
-    SetSession {
-        #[serde(rename = "SessionId")]
-        session: String,
-    },
-    SetHistory {
-        #[serde(rename = "History")]
-        history: History,
-    },
-    Clean,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-struct History {
-    moves: Vec<Cell>,
-    players: Vec<String>,
-}
-
-/// Message from the client to the server.
-#[derive(Serialize)]
-#[serde(tag = "method", content = "resource")]
-enum ClientMessage {
-    Connect {
-        #[serde(rename = "Player")]
-        player_name: String,
-    },
-    PostMove {
-        #[serde(rename = "Cell")]
-        cell: Cell,
-    },
-    GetHistory,
-    CleanHistory,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Cell {
-    coord: Coord,
-    value: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Coord {
-    row: u32,
-    col: u32,
 }
 
 fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
@@ -159,29 +97,29 @@ fn update(msg: Msg, mut model: &mut Model, orders: &mut Orders<Msg>) {
             ServerMessage::Connected { player } => {
                 log!(player, "connected");
                 model.players.push(player);
-            },
-            ServerMessage::Disconnected{ player} => {
+            }
+            ServerMessage::Disconnected { player } => {
                 log!(player, "disconnected");
                 model.players.retain(|name| name != &player);
-            },
-            ServerMessage::Move{cell} => {
+            }
+            ServerMessage::Move { cell } => {
                 log!(&cell);
                 model.history.moves.push(cell);
                 // TODO: focus
-            },
-            ServerMessage::Win{player} =>{
+            }
+            ServerMessage::Win { player } => {
                 log!(player, "won!");
-            },
-            ServerMessage::SetSession{session} =>{
+            }
+            ServerMessage::SetSession { session } => {
                 model.session = session;
-            },
+            }
             ServerMessage::SetHistory { history } => {
                 model.history = history;
-            },
+            }
             ServerMessage::Clean => {
                 log!("New game started");
                 model.history = History::default();
-            },
+            }
         },
     }
 }
@@ -227,54 +165,4 @@ fn draw_row(size: u32, y: u32, history: &History) -> El<Msg> {
             })
             .collect::<Vec<_>>()
     ]
-}
-
-fn register_handlers(ws: &web_sys::WebSocket) {
-    register_handler_on_open(ws);
-    register_handler_on_message(ws);
-    register_handler_on_close(ws);
-    register_handler_on_error(ws);
-}
-
-// ------ HANDLERS -------
-
-fn register_handler_on_open(ws: &web_sys::WebSocket) {
-    let on_open = Closure::wrap(Box::new(move |_| {
-        log!("WebSocket connection is open now");
-        seed::update(Msg::Connected);
-    }) as Box<FnMut(JsValue)>);
-
-    ws.set_onopen(Some(on_open.as_ref().unchecked_ref()));
-    on_open.forget();
-}
-
-fn register_handler_on_close(ws: &web_sys::WebSocket) {
-    let on_close = Closure::wrap(Box::new(|_| {
-        log!("WebSocket connection was closed");
-    }) as Box<FnMut(JsValue)>);
-
-    ws.set_onclose(Some(on_close.as_ref().unchecked_ref()));
-    on_close.forget();
-}
-
-fn register_handler_on_message(ws: &web_sys::WebSocket) {
-    let on_message = Closure::wrap(Box::new(move |ev: MessageEvent| {
-        log!("Client received a message");
-        let txt = ev.data().as_string().unwrap();
-        let json: ServerMessage = serde_json::from_str(&txt).unwrap();
-        log!(&txt);
-        seed::update(Msg::ServerMessage(json));
-    }) as Box<FnMut(MessageEvent)>);
-
-    ws.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
-    on_message.forget();
-}
-
-fn register_handler_on_error(ws: &web_sys::WebSocket) {
-    let on_error = Closure::wrap(Box::new(|_| {
-        log!("Error");
-    }) as Box<FnMut(JsValue)>);
-
-    ws.set_onerror(Some(on_error.as_ref().unchecked_ref()));
-    on_error.forget();
 }
