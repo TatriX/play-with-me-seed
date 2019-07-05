@@ -37,8 +37,11 @@ ul {
 .grid {
     font-size : 20px;
     display: flex;
-    justify-content: center;
-    flex-grow: 1;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
 }
 
 .cell {
