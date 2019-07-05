@@ -65,6 +65,14 @@ fn gameplay(model: &Model) -> El<Msg> {
                         })
                         .collect::<Vec<_>>()
                 ],
+                label![
+                    id!["color"],
+                    "Color",
+                    input![
+                        attrs!{At::Type => "color"},
+                        input_ev(Ev::Change, Msg::TokenColorChange)
+                    ],
+                ],
                 button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
             ],
             label![

@@ -14,6 +14,7 @@ pub enum ServerMessage {
         #[serde(rename = "Player")]
         player: String,
     },
+    SetCell(Cell),
     SetSession {
         session: String,
         history: History,

@@ -103,6 +103,7 @@ pub enum Msg {
     NameChange(String),
     SessionChange(String),
     TokenChange(String),
+    TokenColorChange(String),
     Connect,
     Connected,
     ServerMessage(ServerMessage),
@@ -116,6 +117,10 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
         Msg::NameChange(name) => model.player.name = name,
         Msg::SessionChange(session) => model.session = session,
         Msg::TokenChange(code) => model.player.token.code = code,
+        Msg::TokenColorChange(color) => {
+            log!("Changing color", color);
+            model.player.token.color = color
+        },
         Msg::Connect => {
             let ws = WebSocket::new(WS_URL).expect("websocket failure");
             websocket::register_handlers(&ws);
@@ -159,6 +164,10 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
             ServerMessage::Win { player } => {
                 log!(player, "won!");
             }
+            ServerMessage::SetCell(cell) => {
+                // TODO: check uniqueness
+                model.history.push(cell);
+            },
             ServerMessage::SetSession {
                 session,
                 history,
