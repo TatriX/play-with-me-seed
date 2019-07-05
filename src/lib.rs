@@ -13,7 +13,9 @@ mod websocket;
 
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 
-pub const TOKENS: [&str; 10] = ["✗", "❍", "☀", "☉", "☘", "☣", "█", "▓", "▒", "░"];
+pub const TOKENS: [&str; 10] = [
+    "✗", "❍", "☀", "☉", "☘", "☣", "█", "▓", "▒", "░",
+];
 
 #[wasm_bindgen]
 pub fn render() {
@@ -24,7 +26,10 @@ pub fn render() {
         .finish()
         .run();
 
-    let search = seed::window().location().search().expect("cannot get location");
+    let search = seed::window()
+        .location()
+        .search()
+        .expect("cannot get location");
     let autoconnect = search == "?autoconnect";
     if autoconnect {
         seed::update(Msg::Connect);
@@ -45,14 +50,10 @@ pub struct Model {
     /// Current session id
     session: String,
 
-    /// Current token ("x" or "o" for now)
-    token: String,
-
-    /// Current player name
-    player: String,
+    player: Player,
 
     /// Who is connected
-    players: Vec<String>,
+    players: Vec<Player>,
 
     /// State of the game field
     history: History,
@@ -73,24 +74,24 @@ impl Model {
             session: "global".into(),
             stage: Stage::Lobby,
             history: History::default(),
-            player: "Anonymous".into(),
-            token: TOKENS[0].into(),
+            player: Player {
+                id: "".into(),
+                name: "Anonymous".into(),
+                token: Token {
+                    code: TOKENS[0].into(),
+                    color: "#333".into(),
+                },
+            },
             players: vec![],
         }
     }
 
-    /// Create frame ready to be sent over the websocket with the
-    /// current session id.
-    fn frame(&self, message: impl Serialize) -> String {
-        let frame = (&self.session, message);
-        serde_json::to_string(&frame).expect("cannot create frame")
-    }
-
     fn send(&self, message: impl Serialize) {
+        let message = serde_json::to_string(&message).expect("cannot create frame");
         self.ws
             .as_ref()
             .expect("sending to a None socket")
-            .send_with_str(&self.frame(message))
+            .send_with_str(&message)
             .expect("cannot send message");
     }
 }
@@ -112,9 +113,9 @@ pub enum Msg {
 
 fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
     match msg {
-        Msg::NameChange(player) => model.player = player,
+        Msg::NameChange(name) => model.player.name = name,
         Msg::SessionChange(session) => model.session = session,
-        Msg::TokenChange(token) => model.token = token,
+        Msg::TokenChange(code) => model.player.token.code = code,
         Msg::Connect => {
             let ws = WebSocket::new(WS_URL).expect("websocket failure");
             websocket::register_handlers(&ws);
@@ -125,44 +126,49 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
             log!("Connected!");
             model.stage = Stage::Gameplay;
             model.send(ClientMessage::Connect {
-                player: model.player.clone(),
+                player_name: model.player.name.clone(),
+                mode: ConnectionMode::NewGame,
+                session: model.session.clone(),
             });
-            model.send(ClientMessage::GetHistory);
         }
         Msg::Move { x, y } => {
             let cell = Cell {
-                coord: Coord { row: y, col: x },
-                value: model.token.clone(),
+                coord: Coord { x, y },
+                value: model.player.token.clone(),
             };
-            model.history.moves.push(cell.clone());
-            model.send(ClientMessage::PostMove {cell});
+            model.history.push(cell.clone());
+            model.send(ClientMessage::PostMove(cell));
         }
         Msg::CleanHistory => {
             model.send(ClientMessage::CleanHistory);
         }
         Msg::ServerMessage(msg) => match msg {
-            ServerMessage::Connected { player } => {
+            ServerMessage::Connected(player) => {
                 log!(player, "connected");
                 model.players.push(player);
             }
-            ServerMessage::Disconnected { player } => {
+            ServerMessage::Disconnected ( player ) => {
                 log!(player, "disconnected");
-                model.players.retain(|name| name != &player);
+                model.players.retain(|p| p.id != player.id);
             }
             ServerMessage::Move { cell } => {
                 log!(&cell);
-                model.history.moves.push(cell);
+                model.history.push(cell);
                 // TODO: focus
             }
             ServerMessage::Win { player } => {
                 log!(player, "won!");
             }
-            ServerMessage::SetSession { session } => {
+            ServerMessage::SetSession {
+                session,
+                history,
+                player,
+            } => {
+                model.player = player;
                 model.session = session;
-            }
-            ServerMessage::SetHistory { history } => {
-                model.token = select_token(&history);
                 model.history = history;
+
+                model.player.token.code = select_token(&model.players);
             }
             ServerMessage::Clean => {
                 log!("New game started");
@@ -173,6 +179,6 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
     }
 }
 
-fn select_token(history: &History) -> String {
-    TOKENS[history.players.len() % TOKENS.len()].to_string()
+fn select_token(players: &[Player]) -> String {
+    TOKENS[players.len() % TOKENS.len()].to_string()
 }

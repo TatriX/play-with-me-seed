@@ -4,14 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "message", content = "data")]
 pub enum ServerMessage {
-    Connected {
-        #[serde(rename = "Player")]
-        player: String,
-    },
-    Disconnected {
-        #[serde(rename = "Player")]
-        player: String,
-    },
+    Connected(Player),
+    Disconnected(Player),
     Move {
         #[serde(rename = "Cell")]
         cell: Cell,
@@ -21,47 +15,57 @@ pub enum ServerMessage {
         player: String,
     },
     SetSession {
-        #[serde(rename = "SessionId")]
         session: String,
-    },
-    /// Send once on first connect
-    SetHistory {
-        #[serde(rename = "History")]
         history: History,
+        #[serde(rename = "me")]
+        player: Player,
     },
     Clean,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct History {
-    pub moves: Vec<Cell>,
-    pub players: Vec<String>,
+pub struct Player {
+    pub id: String,
+    pub name: String,
+    pub token: Token,
 }
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Token {
+    pub code: String,
+    pub color: String,
+}
+
+pub type History = Vec<Cell>;
 
 /// Message from the client to the server.
 #[derive(Serialize)]
 #[serde(tag = "method", content = "resource")]
 pub enum ClientMessage {
+    #[serde(rename_all = "camelCase")]
     Connect {
-        #[serde(rename = "Player")]
-        player: String,
+        player_name: String,
+        mode: ConnectionMode,
+        session: String,
     },
-    PostMove {
-        #[serde(rename = "Cell")]
-        cell: Cell,
-    },
-    GetHistory,
+    PostMove(Cell),
     CleanHistory,
+}
+
+#[derive(Serialize)]
+pub enum ConnectionMode {
+    NewGame,
+    RandomGame,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cell {
     pub coord: Coord,
-    pub value: String,
+    pub value: Token,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Coord {
-    pub row: u32,
-    pub col: u32,
+    pub x: u32,
+    pub y: u32,
 }

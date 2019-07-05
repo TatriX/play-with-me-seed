@@ -1,4 +1,4 @@
-use crate::{History, Model, Msg, Stage, TOKENS};
+use crate::{History, Model, Msg, Stage, TOKENS, Player, Token};
 use seed::prelude::*;
 
 const ENTER_KEY: u32 = 13;
@@ -22,7 +22,7 @@ fn lobby(model: &Model) -> El<Msg> {
         label![
             "Name",
             input![
-                attrs! {At::Value => model.player, At::AutoFocus => true},
+                attrs! {At::Value => model.player.name, At::AutoFocus => true},
                 input_ev(Ev::Input, Msg::NameChange),
                 keyboard_ev(Ev::KeyDown, submit),
             ]
@@ -54,7 +54,7 @@ fn gameplay(model: &Model) -> El<Msg> {
                         .iter()
                         .map(|token| {
                             button![
-                                class![if token == &model.token {
+                                class![if token == &model.player.token.code {
                                     "selected"
                                 } else {
                                     ""
@@ -75,7 +75,7 @@ fn gameplay(model: &Model) -> El<Msg> {
         hr![],
         div![
             id!("gameplay-area"),
-            player_list(&model.history.players, &model.player),
+            player_list(&model.players, &model.player),
             draw_grid(model.size, &model.history),
         ]
     ]
@@ -89,13 +89,13 @@ fn submit(ev: web_sys::KeyboardEvent) -> Msg {
     }
 }
 
-fn player_list(players: &[String], player: &str) -> El<Msg> {
+fn player_list(players: &[Player], player: &Player) -> El<Msg> {
     ul![
         id!("players"),
         li![class!["list-header"], "Players:"],
         players
             .iter()
-            .map(|name| li![class![if name == player { "is-player" } else { "" }], name])
+            .map(|p| li![class![if p.id == player.id { "is-player" } else { "" }], p.name])
             .collect::<Vec<_>>(),
     ]
 }
@@ -114,17 +114,17 @@ fn draw_row(size: u32, y: u32, history: &History) -> El<Msg> {
         class!["row"],
         (0..size)
             .map(|x| {
-                let content = history
-                    .moves
+                let token = history
                     .iter()
-                    .find(|cell| cell.coord.row == y && cell.coord.col == x)
+                    .find(|cell| cell.coord.y == y && cell.coord.x == x)
                     .map(|cell| cell.value.clone())
-                    .unwrap_or(" ".into());
+                    .unwrap_or_else(|| Token{code: " ".into(), color: "".into()});
                 div![
                     id!(&format!("cell-{}-{}", x, y)),
                     class!["cell"],
+                    style!{"color" => token.color},
                     simple_ev(Ev::Click, Msg::Move { x, y }),
-                    content,
+                    token.code,
                 ]
             })
             .collect::<Vec<_>>()
