@@ -76,6 +76,7 @@ fn gameplay(model: &Model) -> El<Msg> {
                 button!["Refresh", simple_ev(Ev::Click, Msg::CleanHistory)],
             ],
             label![
+                id!{"session"},
                 "Session",
                 input![attrs! {At::Value => model.session, At::ReadOnly => true }]
             ],
@@ -84,7 +85,10 @@ fn gameplay(model: &Model) -> El<Msg> {
         div![
             id!("gameplay-area"),
             player_list(&model.players, &model.player),
-            draw_grid(model.size, &model.history),
+            div![
+                id!("grid-container"),
+                draw_grid(model.size, &model.history),
+            ]
         ]
     ]
 }
@@ -130,7 +134,11 @@ fn draw_row(size: u32, y: u32, history: &History) -> El<Msg> {
                 div![
                     id!(&format!("cell-{}-{}", x, y)),
                     class!["cell"],
-                    style!{"color" => token.color},
+                    if token.color != "" {
+                        style!{"color" => token.color}
+                    } else {
+                        style!{}
+                    },
                     simple_ev(Ev::Click, Msg::Move { x, y }),
                     token.code,
                 ]

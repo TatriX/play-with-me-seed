@@ -8,6 +8,19 @@
     color: #222;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    overflow: hidden;
+}
+
+section {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px;
+}
+
 hr {
     border: 1px inset #e0e0dd;
 }
@@ -31,7 +44,10 @@ ul {
 
 .list-header {
     list-style-type: none;
-    font-weight: bold;
+}
+
+#grid-container {
+    overflow: hidden;
 }
 
 .grid {
@@ -48,16 +64,12 @@ ul {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     cursor: pointer;
     width: var(--cell-size);
     height: var(--cell-size);
     border: var(--border);
-    margin: -1px 0 0 -1px;
-}
-
-.cell:hover {
-    background: #333;
-    color: #ddd;
+    margin: 1px;
 }
 
 #gameplay-header, #controls {
@@ -67,6 +79,10 @@ ul {
 
 #controls > div {
     margin-right: 20px;
+}
+
+#tokens {
+    white-space: nowrap;
 }
 
 #tokens button {
@@ -108,4 +124,43 @@ ul {
     margin: 0;
     padding: 2px;;
     box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    button {
+        padding: 5px 8px;
+        font-size: 15px;
+    }
+
+    #gameplay-header {
+        flex-direction: column;
+    }
+
+    #color {
+        display: flex;
+        align-items: center;
+    }
+
+    .cell {
+        width: calc(2 * var(--cell-size));
+        height: calc(2 * var(--cell-size));
+    }
+
+    #gameplay-area {
+        flex-direction: column;
+    }
+
+    #players {
+        display: flex;
+        list-style-type: none;
+        padding: 0;
+    }
+
+    #players li {
+        margin-right: 5px;
+    }
+
+    #session {
+        display: none;
+    }
 }

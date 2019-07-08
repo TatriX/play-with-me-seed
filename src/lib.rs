@@ -13,8 +13,8 @@ mod websocket;
 
 const WS_URL: &str = "wss://tatrix.org/public/games/play-with-me/server";
 
-pub const TOKENS: [&str; 10] = [
-    "✗", "❍", "☀", "☉", "☘", "☣", "█", "▓", "▒", "░",
+pub const TOKENS: [&str; 5] = [
+    "✗", "❍", "☀",  "☘", "☣",
 ];
 
 #[wasm_bindgen]
