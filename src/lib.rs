@@ -57,6 +57,18 @@ pub struct Model {
 
     /// State of the game field
     history: History,
+
+    /// Camera translation
+    camera: Camera,
+
+    /// Whether dragging is in process
+    drag: bool,
+}
+
+#[derive(Clone)]
+pub struct Camera {
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Clone)]
@@ -83,6 +95,8 @@ impl Model {
                 },
             },
             players: vec![],
+            camera: Camera{x: 0, y: 0},
+            drag: false,
         }
     }
 
@@ -110,7 +124,16 @@ pub enum Msg {
     Move { x: u32, y: u32 },
     CleanHistory,
     Nope,
+    Drag(Drag),
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Drag {
+    Start,
+    Stop,
+    Move{x: i32, y: i32},
+}
+
 
 fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
     match msg {
@@ -184,6 +207,18 @@ fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
                 model.history = History::default();
             }
         },
+        Msg::Drag(drag) => {
+            match drag {
+                Drag::Start => model.drag = true,
+                Drag::Stop => model.drag = false,
+                Drag::Move{x, y} => {
+                    if model.drag {
+                        model.camera.x += x;
+                        model.camera.y += y;
+                    }
+                },
+            }
+        }
         Msg::Nope => {}
     }
 }

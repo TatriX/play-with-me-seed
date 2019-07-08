@@ -48,9 +48,12 @@ ul {
 
 #grid-container {
     overflow: hidden;
+    user-select: none;
+    touch-action: none;
 }
 
 .grid {
+    position: relative;
     font-size : 20px;
     display: flex;
     flex-direction: column;
@@ -75,6 +78,7 @@ ul {
 #gameplay-header, #controls {
     display: flex;
     justify-content: space-between;
+    overflow-y: auto;
 }
 
 #controls > div {

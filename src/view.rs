@@ -1,4 +1,4 @@
-use crate::{History, Model, Msg, Stage, TOKENS, Player, Token};
+use crate::{History, Model, Msg, Stage, TOKENS, Player, Token, Camera, Drag};
 use seed::prelude::*;
 
 const ENTER_KEY: u32 = 13;
@@ -87,7 +87,15 @@ fn gameplay(model: &Model) -> El<Msg> {
             player_list(&model.players, &model.player),
             div![
                 id!("grid-container"),
-                draw_grid(model.size, &model.history),
+
+                simple_ev(Ev::PointerUp, Msg::Drag(Drag::Stop)),
+                simple_ev(Ev::PointerDown, Msg::Drag(Drag::Start)),
+                pointer_ev(Ev::PointerMove, |ev| {
+                    ev.prevent_default();
+                    Msg::Drag(Drag::Move{x: ev.movement_x(), y: ev.movement_y()})
+                }),
+
+                draw_grid(&model.camera, model.size, &model.history),
             ]
         ]
     ]
@@ -112,9 +120,13 @@ fn player_list(players: &[Player], player: &Player) -> El<Msg> {
     ]
 }
 
-fn draw_grid(size: u32, history: &History) -> El<Msg> {
+fn draw_grid(camera: &Camera, size: u32, history: &History) -> El<Msg> {
     div![
         class!["grid"],
+        style!{
+            "left" => unit!(camera.x, px),
+            "top" => unit!(camera.y, px),
+        },
         (0..size)
             .map(|y| draw_row(size, y, history))
             .collect::<Vec<_>>()
