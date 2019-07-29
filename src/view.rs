@@ -4,7 +4,7 @@ use seed::prelude::*;
 const ENTER_KEY: u32 = 13;
 
 /// Main view
-pub fn view(model: &Model) -> Vec<El<Msg>> {
+pub fn view(model: &Model) -> Vec<Node<Msg>> {
     vec![
         h1!["PlayWithMe Rust/Seed edition!"],
         hr![],
@@ -16,7 +16,7 @@ pub fn view(model: &Model) -> Vec<El<Msg>> {
     ]
 }
 
-fn lobby(model: &Model) -> El<Msg> {
+fn lobby(model: &Model) -> Node<Msg> {
     div![
         id!("lobby"),
         label![
@@ -41,7 +41,7 @@ fn lobby(model: &Model) -> El<Msg> {
     ]
 }
 
-fn gameplay(model: &Model) -> El<Msg> {
+fn gameplay(model: &Model) -> Node<Msg> {
     div![
         div![
             id!("gameplay-header"),
@@ -109,7 +109,7 @@ fn submit(ev: web_sys::KeyboardEvent) -> Msg {
     }
 }
 
-fn player_list(players: &[Player], player: &Player) -> El<Msg> {
+fn player_list(players: &[Player], player: &Player) -> Node<Msg> {
     ul![
         id!("players"),
         li![class!["list-header"], "Players:"],
@@ -120,7 +120,7 @@ fn player_list(players: &[Player], player: &Player) -> El<Msg> {
     ]
 }
 
-fn draw_grid(camera: &Camera, size: u32, history: &History) -> El<Msg> {
+fn draw_grid(camera: &Camera, size: u32, history: &History) -> Node<Msg> {
     div![
         class!["grid"],
         style!{
@@ -133,7 +133,7 @@ fn draw_grid(camera: &Camera, size: u32, history: &History) -> El<Msg> {
     ]
 }
 
-fn draw_row(size: u32, y: u32, history: &History) -> El<Msg> {
+fn draw_row(size: u32, y: u32, history: &History) -> Node<Msg> {
     div![
         class!["row"],
         (0..size)

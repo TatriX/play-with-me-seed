@@ -19,7 +19,7 @@ pub const TOKENS: [&str; 5] = [
 
 #[wasm_bindgen]
 pub fn render() {
-    seed::App::build(Model::new(30), update, view::view)
+    seed::App::build(|_, _| Model::new(30), update, view::view)
         // `trigger_update_handler` is necessary,
         // because we want to process `seed::update(..)` calls.
         .window_events(|_| vec![trigger_update_handler()])
@@ -135,7 +135,7 @@ pub enum Drag {
 }
 
 
-fn update(msg: Msg, mut model: &mut Model, _orders: &mut Orders<Msg>) {
+fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
     match msg {
         Msg::NameChange(name) => model.player.name = name,
         Msg::SessionChange(session) => model.session = session,
